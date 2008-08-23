@@ -64,8 +64,8 @@ sub publish_dir {
     }
     my %given = @_;
 
-    my $from_dir = $given{from_dir} or croak "Wasn't given a dir to copy from";
-    my $to_dir = $given{to_dir} or croak "Wasn't given a dir (or path) to copy to";
+    my $from_dir = $given{from_dir} || $given{from} or croak "Wasn't given a dir to copy from";
+    my $to_dir = $given{to_dir} || $given{to} or croak "Wasn't given a dir (or path) to copy to";
     my $copy = $given{copy};
     my $skip = $given{skip} || qr/^(?:\.svn|.git|CVS|RCS|SCCS)$/;
 
@@ -93,6 +93,37 @@ sub publish_dir {
             }
         }
     } }, $from_dir;
+}
+
+sub publish {
+    my $self = shift;
+    if (1 == @_) {
+        return $self->publish(from => shift, to => $self->run_root_dir, @_);
+    }
+    my %given = @_;
+
+    my $from = $given{from} or croak "Wasn't given a path to copy from";
+    my $to = $given{to} or croak "Wasn't given a path to copy to";
+    my $copy = $given{copy};
+
+    if (-f $from && -d $to) {
+        croak "Given a file to copy ($from) but destination is a directory ($to)";
+    }
+
+    return $self->publish_dir(@_) unless -f $from;
+
+    my $dir = file($to)->parent;
+    $dir->mkpath unless -d $dir;
+
+    if ($copy) {
+        File::Copy::copy($from, $to) or warn "Couldn't copy($from, $to): $!";
+    }
+    else {
+        return if -l $to;
+        my $from = File::Spec::Link->resolve($from) || $from;
+        $from = file($from)->absolute;
+        symlink $from, $to or warn "Couldn't symlink($from, $to): $!";
+    }
 }
 
 =head1 AUTHOR

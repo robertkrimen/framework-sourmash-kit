@@ -81,7 +81,7 @@ sub _setup_kit_dir {
 
         next if $class->can($dir_method);
 
-        $class->meta->add_attribute($dir_method => qw/is ro required 1 coerce 1 lazy 1/, isa => Dir, default => sub {
+        $class->meta->add_attribute($dir_method => qw/is rw required 1 coerce 1 lazy 1/, isa => Dir, default => sub {
             return shift->$parent_dir_method->subdir($last_dir);
         }, @_);
     }
